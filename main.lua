@@ -1,5 +1,4 @@
 local NODE = require('node')
-local CONNECTIONS = { }
 
 local nodes = { }
 local clickcountdown
@@ -101,11 +100,11 @@ function love.mousepressed(x,y,b)
                         -- we can only have one connection per starting point (one path)
                         -- so we need to check all the active connections and remove 
                         -- anything from this same point
-                        for i, conn in pairs(connections) do
-                            if conn[1][2] == result[4] then
-                                table.remove(connections, i)
-                                return
-                            end
+                        local _, oldindex = getConnection((result[4] or result[3]).id)
+                        -- the (result[4] or result[3]) is because of the dumb way i did this,
+                        -- probably have to refactor it later but it works now.
+                        if oldindex then
+                            table.remove(connections, oldindex)
                         end
                     else
                         -- only starting nodes can be the result of a drag link
@@ -150,6 +149,8 @@ function love.mousemoved(x,y)
 end
 
 function love.keypressed(key, code)
+    if code == "s" then save() return end
+    
     if code == "delete" then
         for index, node in pairs(nodes) do
             if node.selected then 
@@ -168,4 +169,63 @@ function love.keyreleased(key, code)
     for _, node in pairs(nodes) do
         node:keyreleased(key, code)
     end
+end
+
+function getConnection(id)
+    for index, conn in pairs(connections) do
+        local obj = conn[1][1]; if conn[1][2] then obj = conn[1][2] end
+        if obj.id == id then
+            if conn[2][2] then return conn[2][2].id, index
+            else return conn[2][1].id, index end
+        end
+    end
+end
+
+local function translateVars(node)
+    local string = "{ "
+
+    for _, var in pairs(node.vars) do
+        string = string .. "{ "
+        string = string .. "id = \"" .. var.id .. "\", "
+        string = string .. "text = \"" .. var.text .. "\", "
+        local connection = getConnection(var.id); if connection then
+            string = string .. "conn = \"" .. connection .. "\", "
+        end 
+        string = string .. " },"
+    end
+
+    return string .. " }"
+end
+
+local function translateNode(node)
+    local string = "{ "
+
+    string = string .. "id = \"" .. node.id .. "\", "
+    string = string .. "title = \"" .. node.title .. "\", "
+    local connection = getConnection(node.id); if connection then
+        string = string .. "conn = \"" .. connection .. "\", "
+    end 
+    string = string .. "vars = " .. translateVars(node) .. ", "
+
+    return string .. " }"
+end
+
+function save()
+    local file = love.filesystem.newFile("saved","w")
+    
+    local string = "return {\n"
+
+    string = string .. "  nodes = {\n"
+    for i, node in pairs(nodes) do
+        local nodeText = translateNode(node)
+
+        string = string .. "    " .. nodeText .. ",\n"
+    end
+    string = string .. "  }"
+
+    string = string .. "}"
+    file:write(string)
+    file:close()
+
+    return
 end

@@ -19,14 +19,28 @@ local NODE = {
 }
 NODE.__index = NODE
 
+local function hash()
+    local bank = "qwertyuiopasdfghjklzxcvbnm1234567890QWERTYUIOPASDFGHJKLZXCVBNM"
+    local length = 12
+    local h = ""
+
+    while #h < length do
+        local i = math.random(1,#bank)
+        h = h .. bank:sub(i,i)
+    end
+
+    return h
+end
+
 function NODE.new(x,y)
     local node = { }
 
     setmetatable(node, NODE)
 
+    node.id = hash()
     node.title = "node"
     node.vars = {
-        { text = "blank" }
+        { text = "blank", id = hash() }
     }
 
     node:_calcSize(x,y)
@@ -321,7 +335,7 @@ function NODE:addVar()
         end
     end
 
-    table.insert(self.vars, { text = name })
+    table.insert(self.vars, { text = name, id = hash() })
 
     self:_calcSize()
 end
