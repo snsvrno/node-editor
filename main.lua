@@ -15,14 +15,16 @@ function love.draw()
 
     love.graphics.setColor(1,1,1)
     for _, connection in pairs(connections) do
+        -- the first point, will be either a variable point
+        -- or a the generic output
         local ax,ay = 0,0; if connection[1][2] then
             ax = connection[1][1].x + connection[1][2].bx
             ay = connection[1][1].y + connection[1][2].by
         else
-            ax = connection[1][1].x
+            ax = connection[1][1].x + connection[1][1].w
             ay = connection[1][1].y + connection[1][1].idy
         end
-
+        -- can only be the input to a node.
         local bx,by = 1,1; if connection[2][2] then
             bx = connection[2][1].x + connection[2][2].bx
             by = connection[2][1].y + connection[2][2].by
@@ -92,7 +94,7 @@ function love.mousepressed(x,y,b)
                         -- only the vars can be the start of a drag, if the
                         -- result doesn't have a 4th slot (var) then it is
                         -- the starting node and not a valid dragging link.
-                        if result[4] == nil then return end
+                        if result[3].overBall == true then return end
 
                         workingLine = result
 

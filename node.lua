@@ -53,6 +53,7 @@ function NODE:_calcSize(x,y)
     self.x = self.x or x - self.w/2
     self.y = self.y or y - self.h/2
 
+    -- input dot
     self.idy = self.padding + fontHeight/2
 
     local starty = self.padding + fontHeight + self.varPadding
@@ -97,6 +98,11 @@ function NODE:draw()
     if self.overBall == true then love.graphics.setColor(self.connectionRadiusColorOver)
     else love.graphics.setColor(self.connectionRadiusColor) end
     love.graphics.circle("fill", self.x, self.y + self.idy, self.connectionRadius)
+
+    -- draws the deneric output dot
+    if self.overBallOut == true then love.graphics.setColor(self.connectionRadiusColorOver)
+    else love.graphics.setColor(self.connectionRadiusColor) end
+    love.graphics.circle("fill", self.x + self.w, self.y + self.idy, self.connectionRadius)
 
     -- draws the vars
     local starty = self.y + self.padding + fontHeight + self.varPadding
@@ -146,6 +152,9 @@ function NODE:update(dt)
 end
 
 function NODE:mousemoved(x,y)
+    -- checks elements for status, and sets them so when you do mouse click
+    -- it can just check those states.
+
     -- checks if we are over any of the items (+ their connections)
     for _, v in pairs(self.vars) do
         if v.bx + self.x - self.connectionRadius <= x and x <= v.bx + self.x + self.connectionRadius
@@ -164,6 +173,14 @@ function NODE:mousemoved(x,y)
         self.overBall = false
     end
 
+    -- checks if we are over the output dot
+    if self.x + self.w - self.connectionRadius <= x and x <= self.x + self.w + self.connectionRadius
+    and self.y + self.idy - self.connectionRadius <= y and y <= self.y + self.idy + self.connectionRadius then
+        self.overBallOut = true
+    else
+        self.overBallOut = false
+    end
+
     -- checks if we are over the plus at the bottom
     if self.x <= x and x <= self.x + self.w
     and self.y + self.ay <= y and y <= self.y + self.ay + self.ah then
@@ -176,14 +193,21 @@ end
 function NODE:mousepressed(x,y,b)
     if b == 1 then
 
-        -- first we check if we are over a dot.
+        -- first we check if we are over any dot.
         local checkdrag = true; if self.overBall then
             -- over input dot.
             checkdrag = false
             return {
                 self.x, self.y + self.idy, self
             }
+        elseif self.overBallOut then
+            -- we are over the generic output dot.
+            checkdrag = false
+            return {
+                self.x + self.w, self.y + self.idy, self
+            }
         else
+            -- we check the individual variable outputs
             for i,v in pairs(self.vars) do
                 if v.overBall then 
                     checkdrag = false
