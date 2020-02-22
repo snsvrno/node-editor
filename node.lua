@@ -48,6 +48,24 @@ function NODE.new(x,y)
     return node
 end
 
+function NODE.fromSaved(blob)
+    local node = { }
+    setmetatable(node, NODE)
+
+    node.id = blob.id
+    node.title = blob.title
+    node.vars = { }; for _, v in pairs(blob.vars or { }) do
+        table.insert(node.vars, {
+            text = v.text,
+            id = v.id
+        })
+    end
+
+    node:_calcSize(blob.x, blob.y)
+
+    return node
+end
+
 function NODE:_calcSize(x,y)
     -- recalculates the dimensions of all the elements
     -- so we don't have to do it every cycle

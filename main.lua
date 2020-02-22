@@ -201,6 +201,8 @@ local function translateNode(node)
     local string = "{ "
 
     string = string .. "id = \"" .. node.id .. "\", "
+    string = string .. "x = \"" .. (node.x + node.w/2) .. "\", "
+    string = string .. "y = \"" .. (node.y + node.h/2) .. "\", "
     string = string .. "title = \"" .. node.title .. "\", "
     local connection = getConnection(node.id); if connection then
         string = string .. "conn = \"" .. connection .. "\", "
@@ -211,7 +213,7 @@ local function translateNode(node)
 end
 
 function save()
-    local file = love.filesystem.newFile("saved","w")
+    local file = love.filesystem.newFile("saved.nodenet.lua","w")
     
     local string = "return {\n"
 
@@ -228,4 +230,61 @@ function save()
     file:close()
 
     return
+end
+
+local function getConnectionSetFromNodes(id)
+    for _, n in pairs(nodes) do
+        -- first checks if this is a node
+        if n.id == id then
+            return { n }
+        end
+
+        for _, v in pairs(n.vars or { }) do
+            if v.id == id then
+                return { n, v }
+            end
+        end
+    end
+
+    assert(false)
+end
+
+function load(filename)
+    local savedData, err = dofile(filename)
+
+    nodes = { }
+    connections = { }
+
+    -- loads the nodes
+    for _, n in pairs(savedData.nodes) do
+        table.insert(nodes, NODE.fromSaved(n))
+    end
+
+    print("loaded " .. tostring(#nodes) .. " nodes")
+
+    -- creates the connections, first owner then element (if any)
+    for _, n in pairs(savedData.nodes) do
+        -- check the main node
+        if n.conn then
+            table.insert(connections, {
+                getConnectionSetFromNodes(n.id),
+                getConnectionSetFromNodes(n.conn)
+            })
+        end
+
+        -- check all the vars
+        for _, v in pairs(n.vars or { }) do
+            if v.conn then 
+                table.insert(connections, {
+                    getConnectionSetFromNodes(v.id),
+                    getConnectionSetFromNodes(v.conn)
+                })
+            end
+        end
+    end
+
+end
+
+function love.filedropped(file)
+    load(file:getFilename())
 end
