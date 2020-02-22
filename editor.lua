@@ -24,6 +24,10 @@ function EDITOR.new(w,h)
     editor.mx = 0
     editor.my = 0
 
+    -- viewport camera options
+    editor.ox = 0
+    editor.oy = 0
+
     editor.canvas = love.graphics.newCanvas(w,h)
 
     -- for drawing the line while the user
@@ -41,15 +45,28 @@ function EDITOR:init()
     self.workingLine = nil
 end
 
+function EDITOR:drawBackground()
+    local vx = 0 - self.ox
+    local vy = 0 - self.oy
+    local vw = self.w
+    local vh = self.h
+    
+    love.graphics.setColor(self.background)
+    love.graphics.rectangle("fill", vx - 10, vy -10, vw + 20, vh + 20)
+end
+
 function EDITOR:draw(x,y)
     -- the drawing parameters are the viewports current area
     
     self.canvas:renderTo(function()
         love.graphics.clear()
 
+        -- locks the current transformations
+        love.graphics.push()
+        love.graphics.translate(self.ox, self.oy)
+
         -- draws the background
-        love.graphics.setColor(self.background)
-        love.graphics.rectangle("fill", -10, -10, self.w + 20, self.h + 20)
+        self:drawBackground()
         love.graphics.setColor(1,1,1)
 
         -- draws all the saved connections
@@ -84,6 +101,9 @@ function EDITOR:draw(x,y)
             love.graphics.setColor(self.lines.standard)
             love.graphics.line(self.workingLine[1], self.workingLine[2], self.mx, self.my)
         end
+
+        -- reverts to the older transformations
+        love.graphics.pop()
     end)
 
     -- draws the canvas
@@ -95,7 +115,7 @@ function EDITOR:draw(x,y)
 end
 
 function EDITOR:update(dt)
-
+    
     -- for deselecting the nodes so we don't have more than
     -- one node selected at once.
     for _, n in pairs(self.nodes) do
@@ -105,6 +125,12 @@ function EDITOR:update(dt)
                 if n2 ~= n then n2.selected = false end
             end
         end end
+    end
+
+    -- does dragging if we were dragging the viewport around
+    if self.dragging then
+        self.ox = self.dragging.ox - self.dragging.mx + self.mox
+        self.oy = self.dragging.oy - self.dragging.my + self.moy
     end
 
     return
@@ -118,12 +144,23 @@ end
 
 function EDITOR:mousepressed(x,y,b)
     -- for single click
+    ox,oy = x,y -- non translated mouse
+    x,y = self:translateMouse(x,y)
     
     local inANode = false
 
     if b == 2 and self.workingLine then
         -- checks if we might want to cancel a dragging link
         workingLine = nil; return
+    elseif b == 2 then
+        -- if we have a right click and we're not drawing then
+        -- we want to drag the window around
+        self.dragging = {
+            ox = self.ox,
+            oy = self.oy,
+            mx = ox,
+            my = oy,
+        }
     end
 
     for _,n in pairs(self.nodes) do
@@ -167,6 +204,7 @@ end
 
 function EDITOR:mousedoublepressed(x,y,b)
     -- for double click
+    x,y = self:translateMouse(x,y)
     
     local inANode = false
 
@@ -179,13 +217,32 @@ function EDITOR:mousedoublepressed(x,y,b)
 end
 
 function EDITOR:mousereleased(x,y,b)
+    x,y = self:translateMouse(x,y)
+
     for _, n in pairs(self.nodes) do
         n:mousereleased(x,y,b)
     end
+
+    if b == 2 then
+        -- stops dragging if we were dragging the window.
+        self.dragging = nil
+    end
+end
+
+function EDITOR:translateMouse(x,y)
+
+    -- modify the inputs so they match the transformations
+    x = x - self.ox
+    y = y - self.oy
+
+    return x,y
 end
 
 function EDITOR:mousemoved(x,y,b)
+    self.mox, self.moy = x,y -- untranslated
+    x,y = self:translateMouse(x,y)
     self.mx, self.my = x, y
+
     for _, n in pairs(self.nodes) do
         n:mousemoved(x,y,b)
     end
@@ -206,6 +263,9 @@ function EDITOR:keypressed(key, code)
             n:keypressed(key, code)
         end
     end
+
+    if key == "left" then self.ox = self.ox + 100
+    elseif key == "right" then self.ox = self.ox - 100 end
 end
 
 function EDITOR:keyreleased(key, code)
