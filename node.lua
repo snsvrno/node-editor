@@ -52,6 +52,9 @@ function NODE:_calcSize(x,y)
            + maxVarLength
     self.x = self.x or x - self.w/2
     self.y = self.y or y - self.h/2
+    -- title dimensions
+    self.tw = font:getWidth(self.title)
+    self.th = fontHeight
 
     -- input dot
     self.idy = self.padding + fontHeight/2
@@ -91,8 +94,19 @@ function NODE:draw()
     self:drawShape(self.x, self.y, self.w, self.h)
 
     -- draws the title
-    love.graphics.setColor(self.foreground)
-    love.graphics.print(self.title, self.x + self.padding, self.y + self.padding)
+    do
+
+        if self.titleEdit then
+            love.graphics.setColor(self.varEditColor)
+            love.graphics.rectangle('fill', 
+                self.x + self.padding, self.y + self.padding,
+                self.tw, self.th
+             )
+        end
+
+        love.graphics.setColor(self.foreground)
+        love.graphics.print(self.title, self.x + self.padding, self.y + self.padding)
+    end
 
     -- draws the input dot
     if self.overBall == true then love.graphics.setColor(self.connectionRadiusColorOver)
@@ -256,8 +270,16 @@ function NODE:doublepressed(x,y,b)
                     return true
                 end
             end
-
             self.varEdit = nil
+            
+            -- checks if we are over the name of the node
+            if self.x + self.padding <= x and x <= self.x + self.padding + self.tw
+            and self.y + self.padding <= y and y <= self.y + self.padding + self.th then
+                self.titleEdit = true
+                self.keyboardshift = 0
+                return true
+            end
+
             self.selected = true
 
             -- ignore all other things because we can only edit
@@ -308,11 +330,11 @@ function NODE:keypressed(key, code)
     if self.varEdit then
 
         local i = self.varEdit
-        local numberCode = string.byte(code)
+        local numberCode = string.byte(code); if #code > 1 then numberCode = 0 end
 
         if code == "backspace" then
             if #self.vars[i].text > 0 then
-                self.vars[i].text = self.vars[i].text:sub(i,#self.vars[i].text-1)
+                self.vars[i].text = self.vars[i].text:sub(1,#self.vars[i].text-1)
                 self:_calcSize()
             end
 
@@ -340,11 +362,44 @@ function NODE:keypressed(key, code)
             self:_calcSize()
         end
 
+    elseif self.titleEdit then
+
+        local numberCode = string.byte(code); if #code > 1 then numberCode = 0 end
+
+        if code == "backspace" then
+            if #self.title > 0 then
+                self.title = self.title:sub(1,#self.title-1)
+                self:_calcSize()
+            end
+
+        elseif code == "return" then
+            self.titleEdit = nil
+            self:_calcSize()
+
+        elseif code == "lshift" or code == "rshift" then
+            self.keyboardshift = self.keyboardshift + 1
+        
+        elseif 97 <= numberCode and numberCode <= 122 then
+            -- we are in the letter range, so we should look
+            -- for a shift enabler
+            if self.keyboardshift > 0 then
+                -- a capital letter
+                code = utf8.char(numberCode - 32)
+            end
+
+            self.title = self.title .. code
+            self:_calcSize()
+
+        elseif #code == 1 then
+            self.title = self.title .. code
+            self:_calcSize()
+        end
+
     end
 end
 
 function NODE:keyreleased(key, code)
-    if self.varEdit then
+    if self.varEdit or self.titleEdit then
         if code == "lshift" or code == "rshift" then
             self.keyboardshift  = self.keyboardshift - 1
         end
