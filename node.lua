@@ -188,12 +188,12 @@ function NODE:drawShape(x,y,w,h)
     love.graphics.circle("fill", x + w - self.radius, y + h - self.radius, self.radius)
 end
 
-function NODE:update(dt) 
+function NODE:update(dt, mx, my) 
 
 
     if self.grabbed then
-        self.x = self.ox - self.mx + love.mouse.getX()
-        self.y = self.oy - self.my + love.mouse.getY()
+        self.x = self.ox - self.mx + mx
+        self.y = self.oy - self.my + my
     end
 end
 
@@ -285,7 +285,7 @@ function NODE:mousepressed(x,y,b)
     end
 end
 
-function NODE:doublepressed(x,y,b)
+function NODE:mousedoublepressed(x,y,b)
     -- double click command
 
     if b == 1 then
