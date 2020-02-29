@@ -13,6 +13,10 @@ local NODE = {
     connectionRadiusColorOver = { 1,1,1 },
     plusOverColor = { 1,1,1 },
     varEditColor = { 0.4, 0.4, 0.4 },
+
+    -- an extra radius for the dots so its 
+    -- easier to click on the dots points
+    mouseOverRadiusAdder = 4,
     
     padding = 10,
     TOGGLESELECTED = 1546
@@ -203,8 +207,10 @@ function NODE:mousemoved(x,y)
 
     -- checks if we are over any of the items (+ their connections)
     for _, v in pairs(self.vars) do
-        if v.bx + self.x - self.connectionRadius <= x and x <= v.bx + self.x + self.connectionRadius
-        and v.by + self.y - self.connectionRadius <= y and y <= v.by + self.y + self.connectionRadius then
+        if v.bx + self.x - self.connectionRadius - self.mouseOverRadiusAdder  <= x 
+        and x <= v.bx + self.x + self.connectionRadius + self.mouseOverRadiusAdder
+        and v.by + self.y - self.connectionRadius - self.mouseOverRadiusAdder <= y 
+        and y <= v.by + self.y + self.connectionRadius + self.mouseOverRadiusAdder then
             v.overBall = true
         else
             v.overBall = false
@@ -212,16 +218,20 @@ function NODE:mousemoved(x,y)
     end
 
     -- checks if we are over the input dot
-    if self.x - self.connectionRadius <= x and x <= self.x + self.connectionRadius
-    and self.y + self.idy - self.connectionRadius <= y and y <= self.y + self.idy + self.connectionRadius then
+    if self.x - self.connectionRadius - self.mouseOverRadiusAdder <= x 
+    and x <= self.x + self.connectionRadius + self.mouseOverRadiusAdder
+    and self.y + self.idy - self.connectionRadius - self.mouseOverRadiusAdder<= y 
+    and y <= self.y + self.idy + self.connectionRadius + self.mouseOverRadiusAdder then
         self.overBall = true
     else
         self.overBall = false
     end
 
     -- checks if we are over the output dot
-    if self.x + self.w - self.connectionRadius <= x and x <= self.x + self.w + self.connectionRadius
-    and self.y + self.idy - self.connectionRadius <= y and y <= self.y + self.idy + self.connectionRadius then
+    if self.x + self.w - self.connectionRadius - self.mouseOverRadiusAdder <= x 
+    and x <= self.x + self.w + self.connectionRadius + self.mouseOverRadiusAdder
+    and self.y + self.idy - self.connectionRadius - self.mouseOverRadiusAdder <= y 
+    and y <= self.y + self.idy + self.connectionRadius + self.mouseOverRadiusAdder then
         self.overBallOut = true
     else
         self.overBallOut = false
